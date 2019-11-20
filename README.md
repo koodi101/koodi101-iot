@@ -10,27 +10,11 @@
 7. Exit the raspi-config
 
 RPI should now connect to wifi. You can check the ip address by typing
-```ip addr```
-
-It should produce output like
-```
-1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1
-    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
-    inet 127.0.0.1/8 scope host lo
-       valid_lft forever preferred_lft forever
-    inet6 ::1/128 scope host 
-       valid_lft forever preferred_lft forever
-2: wlan0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
-    link/ether b8:27:eb:f9:6a:c2 brd ff:ff:ff:ff:ff:ff
-    inet 192.168.1.101/24 brd 192.168.1.255 scope global wlan0
-       valid_lft forever preferred_lft forever
-    inet6 fe80::799c:261a:a62:b56a/64 scope link 
-       valid_lft forever preferred_lft forever
-```
-In this example, the ip address would be **192.168.1.101**
+```hostname -I```
 
 If you want to use ssh to connect to your RPI, you can do it by writing
-```
+
+```bash
 sudo systemctl enable ssh
 sudo systemctl start ssh
 ```
@@ -38,29 +22,26 @@ sudo systemctl start ssh
 Now you can connect from your own machine with ```ssh pi@<ip>``` if you are in the same network.
 
 ### Setting up the sensor
-To read data from the DHT11 humidity sensor with Raspberry Pi, it needs to be connected to the device. The sensor has three pins which need to be connected to corresponding IO-pins in Raspberry: VCC (power), ground and data. Each pin is labeled in the sensor. Corresponding pins in the IOT-device can be seen from [Raspberry Pi's website](https://www.raspberrypi.org/documentation/usage/gpio/), or with the `pinout` command on Raspberry's command line. 
 
-**The default data pin is set to GPIO4.** This can be changed by setting the desired pin to the `GPIO` environment variable e.g. when running the scipt with the command (more examples about running the script below):
-```
-GPIO=14 python3 rpi.py
-```
+Enviro pHAT is an environmental sensing board that lets you measure temperature, pressure, light, colour, motion and analog sensors. It should be pre-set to a plug-and-play level, so no pin configuration is needed.
 
 ### Run the project
-Let's update our system and install some needed libraries.
-```
-sudo apt-get update
-sudo apt-get upgrade
-sudo apt-get install python3-pip git
-sudo pip3 install requests Adafruit_DHT
+
+The Enviro pHAT developers have been generous enough to provide a one-line installer script that should be run inside the Raspberry Pi Zero. Just open a terminal and type the following into it (and type 'y' or 'n' when prompted):
+
+```bash
+curl https://get.pimoroni.com/envirophat | bash
 ```
 
 First clone your forked version of this repository to the Rasperry pi and go to the iot folder
-```
+
+```bash
 git clone <url>
 ```
 
 You can now try our app by starting it with
-```
+
+```bash
 ENDPOINT=http://you-server/api/temperature python3 rpi.py
 ```
 
@@ -73,29 +54,30 @@ That can be achieved by opening crontab editor by typing ```crontab -e```
 
 Window will open and you can append the following line at end of the file,
 of course replacing the endpoint with a correct one.
-```
+
+```bash
 * * * * * ENDPOINT=http://you-server/api/temperature python3 /home/pi/koodi101-iot/iot/rpi.py >> /home/pi/rpi.log 2>&1
 ```
+
 So what does this mean?
+
 * **\* \* \* \* \*** ENDPOINT=http://you-server/api/temperature python3 /home/pi/koodi101-template/iot/rpi.py >> /home/pi/rpi.log 2>&1
-    * When to run the script, *see below*
+  * When to run the script, *see below*
+
 * \* \* \* \* \* **ENDPOINT=http://you-server/api/temperature** python3 /home/pi/koodi101-template/iot/rpi.py >> /home/pi/rpi.log 2>&1
-    * Pass environmental variable for script to be executed
+  * Pass environmental variable for script to be executed
+
 * \* \* \* \* \* ENDPOINT=http://you-server/api/temperature **python3 /home/pi/koodi101-template/iot/rpi.py** >> /home/pi/rpi.log 2>&1
-    * Normal command to run a script with python
+  * Normal command to run a script with python
+
 * \* \* \* \* \* ENDPOINT=http://you-server/api/temperature python3 /home/pi/koodi101-template/iot/rpi.py **>> /home/pi/rpi.log** 2>&1
-    * **Append** output to a file
+  * **Append** output to a file
+
 * \* \* \* \* \* ENDPOINT=http://you-server/api/temperature python3 /home/pi/koodi101-template/iot/rpi.py >> /home/pi/rpi.log **2>&1**
-    * By default, error messages wouldn't be logged into the file.
-      With this definition, we redirect the to standard output and
-      therefore into the same file.
+  * By default, error messages wouldn't be logged into the file. With this definition, we redirect the to standard output and therefore into the same file.
 
-Cron works by comparing current time to parameters at the beginning of every line.
-If it matches, it will run the script.
+Cron works by comparing current time to parameters at the beginning of every line. If it matches, it will run the script.
 
-Our example is run every minute, although
-it should match at anytime, why is it so? Well, cron runs only every minute, so
-that is why this will work and that is why we can't schedule it to run more often.
+Our example is run every minute, although it should match at anytime, why is it so? Well, cron runs only every minute, so that is why this will work and that is why we can't schedule it to run more often.
 
-There exist cool tool to "translate" cron time entries into human readable form:
-[https://crontab.guru](https://crontab.guru)
+There exist cool tool to "translate" cron time entries into human readable form: [https://crontab.guru](https://crontab.guru)
